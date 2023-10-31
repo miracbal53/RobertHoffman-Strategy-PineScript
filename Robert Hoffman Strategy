@@ -1,0 +1,141 @@
+//@version=5
+strategy(title='Robert Hoffman Strategy', overlay=true , calc_on_every_tick=true, currency=currency.USD , commission_type=strategy.commission.percent , commission_value=0.2 , initial_capital=100 , default_qty_type=strategy.percent_of_equity , default_qty_value = 100 )
+
+// RobHoffman Overlay Set
+
+a = ta.sma(close,3)
+b = ta.sma(close,5)
+
+c = ta.ema(close,18)
+d = ta.ema(close,20)
+
+e = ta.sma(close,50)
+f = ta.sma(close,89)
+g = ta.ema(close,144)
+h = ta.sma(close,200)
+
+k = ta.ema(close,35)
+r = ta.rma(ta.tr,35)
+ku = k + r*0.5
+kl = k - r*0.5
+
+//plot(a, title = "Fast Speed Line", linewidth = 2, color = #0000FF)
+plot(b, title = "Slow Speed Line", linewidth = 2, color = color.fuchsia)
+plot(c, title = "Fast Primary Trend Line", linewidth = 3, color = color.green)
+//plot(d, title = "Slow Primary Trend Line", linewidth = 3, color = #000000)
+plot(e, title = "Trend Line - 1", linewidth = 3, color = color.white)
+plot(f, title = "Trend Line - 2", linewidth = 3, color = color.white)
+plot(g, title = "Trend Line - 3", linewidth = 3, color = color.orange)
+//plot(h, title = "Trend Line - 4", linewidth = 3, color = color.fuchsia)
+
+plot(k, title = "No Trend Zone - Midline", linewidth = 2, color = color.white)
+plot(ku, title = "No Trend Zone - Upperline", linewidth = 2, color = color.white)
+//plot(kl, title = "No Trend Zone - Lowerline", linewidth = 2, color = #3CB371)
+
+// Rob Hoffman Inventory Retracement 
+
+z = input.int(defval=45, title="Inventory Retracement Percentage %", maxval=100)
+
+// Candle Range
+a1 = math.abs(high - low)
+// Candle Body
+b1 = math.abs(close - open)
+// Percent to Decimal
+c1 = z/100
+
+// Range Verification 
+rv = b1 < c1*a1
+
+// Price Level for Retracement
+x = low + (c1 * a1)
+y = high - (c1 * a1)
+
+sl = rv == 1 and high > y and close < y and open < y 
+ss = rv == 1 and low < x and close > x and open > x 
+
+// Line Definition
+//li = sl ? y : ss ? x : (x+y)/2
+
+// Plot Statement
+plotshape(sl, style=shape.triangledown, location=location.abovebar, color=color.red, title = "Long Bar")
+plotshape(ss, style=shape.triangleup, location=location.belowbar, color=color.green, title = "Short Bar")
+
+//plot(li, style = line, color = color.blue, title = "Inventory Bar Retracement Price Line")
+
+// Entry Date 
+
+StartYear = input.int(defval=2021,step = 1 ,minval = 2010 ,maxval= 2023,title="Start Year", group="Strategy Options")
+StartMonth = input.int(defval=1,step = 1,minval = 1 ,maxval = 12 ,title="Start Month",group="Strategy Options")
+StartDay = input.int(defval=1,step = 1,minval = 1 ,maxval = 30 ,title="Start Day",group="Strategy Options")
+TestPeriodStart = timestamp(year =StartYear,month= StartMonth,day = StartDay)
+
+TestPeriod () => 
+    time >= TestPeriodStart ? true : false 
+
+
+// Strategy Rules
+
+entryprice = strategy.opentrades.entry_price(strategy.opentrades - 1)
+entrytime = strategy.opentrades.entry_time(strategy.opentrades - 1 )
+entrybarindex = bar_index - strategy.opentrades.entry_bar_index(strategy.opentrades - 1 )
+
+// TP and SL
+
+TPlong = close > entryprice*(entryprice/c)
+SLlong = close < c[entrybarindex] 
+
+TPshort = close < entryprice*(entryprice/c)
+SLshort = close > c[entrybarindex]
+
+// Conditions
+
+longCondition = b>c and c>e and c>f and c>g and c>k and c>ku and sl[1] and (close >= high[1]) and (close > b and close > c)
+longCondition2 = b>c and c>e and c>f and c>g and c>k and c>ku and sl[2] and (close >= high[2]) and (close > b and close > c)
+longCondition3 = b>c and c>e and c>f and c>g and c>k and c>ku and sl[3] and (close >= high[3]) and (close > b and close > c)
+//longCondition4 = b>c and c>e and c>f and c>g and c>k and c>ku and sl[4] and (close >= high[4]) and (close > b and close > c)
+//longCondition5 = b>c and c>e and c>f and c>g and c>k and c>ku and sl[5] and (close >= high[5]) and (close > b and close > c)
+
+
+shortCondition = b<c and c<e and c<f and c<g and c<k and c<ku and ss[1] and  (close <= low[1]) and (close < b and close < c)
+shortCondition2 = b<c and c<e and c<f and c<g and c<k and c<ku and ss[2] and  (close <= low[2]) and (close < b and close < c)
+shortCondition3 = b<c and c<e and c<f and c<g and c<k and c<ku and ss[3] and  (close <= low[3]) and (close < b and close < c)
+//shortCondition4 = b<c and c<e and c<f and c<g and c<k and c<ku and ss[4] and  (close <= low[4]) and (close < b and close < c)
+//shortCondition5 = b<c and c<e and c<f and c<g and c<k and c<ku and ss[5] and  (close <= low[5]) and (close < b and close < c)
+
+// LONG 
+
+if (longCondition) and TestPeriod ()
+    strategy.entry("LONG", strategy.long)
+if (longCondition2) and TestPeriod ()
+    strategy.entry("LONG", strategy.long)
+if (longCondition3) and TestPeriod ()
+    strategy.entry("LONG", strategy.long)
+//if (longCondition4) and TestPeriod ()
+  //  strategy.entry("LONG", strategy.long)
+//if (longCondition5) and TestPeriod ()
+  //  strategy.entry("LONG", strategy.long)
+   
+// TP and SL LONG
+if (TPlong) and TestPeriod ()
+    strategy.close("LONG",comment="LONG take profit")
+if (SLlong) and TestPeriod ()
+    strategy.close("LONG",comment="LONG stop loss")
+
+// SHORT 
+
+if (shortCondition) and TestPeriod ()
+    strategy.entry("SHORT", strategy.short)
+if (shortCondition2) and TestPeriod ()
+    strategy.entry("SHORT", strategy.short)
+if (shortCondition3) and TestPeriod ()
+    strategy.entry("SHORT", strategy.short)
+//if (shortCondition4) and TestPeriod ()
+  //  strategy.entry("SHORT", strategy.short)
+//if (shortCondition5) and TestPeriod ()
+  //  strategy.entry("SHORT", strategy.short)
+    
+// TP and SL SHORT
+if (TPshort) and TestPeriod ()
+    strategy.close("SHORT",comment="SHORT take profit")
+if (SLshort) and TestPeriod ()
+    strategy.close("SHORT",comment="SHORT stop loss")
